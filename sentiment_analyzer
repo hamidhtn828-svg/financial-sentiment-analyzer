@@ -1,0 +1,87 @@
+"""
+هسته اصلی تحلیلگر احساسات مالی
+با استفاده از مدل finBERT
+"""
+
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
+
+class FinancialSentimentAnalyzer:
+    """
+    کلاس اصلی برای تحلیل احساسات متون مالی
+    """
+    
+    def __init__(self, model_name="ProsusAI/finbert"):
+        """
+        مقداردهی اولیه مدل و توکنایزر
+        
+        Args:
+            model_name (str): نام مدل از Hugging Face
+        """
+        print(f"🔄 در حال بارگذاری مدل {model_name}...")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self.labels = ["negative", "neutral", "positive"]
+        print("✅ مدل با موفقیت بارگذاری شد!")
+        
+    def predict(self, text):
+        """
+        تحلیل احساسات یک متن
+        
+        Args:
+            text (str): متن مورد نظر برای تحلیل
+            
+        Returns:
+            dict: شامل متن، برچسب احساسات و میزان اطمینان
+        """
+        # تبدیل متن به ورودی مدل
+        inputs = self.tokenizer(
+            text, 
+            return_tensors="pt", 
+            truncation=True, 
+            max_length=512,
+            padding=True
+        )
+        
+        # انجام پیش‌بینی
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+        
+        # محاسبه احتمالات
+        probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        scores = probabilities[0].tolist()
+        
+        # پیدا کردن برچسب با بیشترین احتمال
+        predicted_index = scores.index(max(scores))
+        predicted_label = self.labels[predicted_index]
+        confidence = max(scores)
+        
+        return {
+            "text": text,
+            "sentiment": predicted_label,
+            "confidence": round(confidence, 3),
+            "scores": {
+                "negative": round(scores[0], 3),
+                "neutral": round(scores[1], 3),
+                "positive": round(scores[2], 3)
+            }
+        }
+
+# اگر این فایل مستقیم اجرا شود، یک تست ساده انجام می‌دهیم
+if __name__ == "__main__":
+    # تست مدل
+    analyzer = FinancialSentimentAnalyzer()
+    
+    # چند نمونه تست
+    test_texts = [
+        "قیمت سهام امروز با رشد چشمگیری همراه بود",
+        "بازار سرمایه در وضعیت نامطلوبی قرار دارد",
+        "تحلیل‌ها نشان از ثبات بازار دارد"
+    ]
+    
+    print("\n🧪 تست مدل با چند نمونه:")
+    for text in test_texts:
+        result = analyzer.predict(text)
+        print(f"\n📝 متن: {result['text']}")
+        print(f"🎯 احساسات: {result['sentiment']} (اطمینان: {result['confidence']})")
+        print(f"📊 جزئیات: منفی={result['scores']['negative']}, خنثی={result['scores']['neutral']}, مثبت={result['scores']['positive']}")
