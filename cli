@@ -1,0 +1,41 @@
+"""
+ابزار خط فرمان برای تحلیل احساسات مالی
+"""
+
+import sys
+from sentiment_analyzer import FinancialSentimentAnalyzer
+
+def main():
+    """تابع اصلی برای اجرا از خط فرمان"""
+    
+    # بررسی ورودی
+    if len(sys.argv) < 2:
+        print("❌ لطفاً یک متن برای تحلیل وارد کنید")
+        print("📝 مثال: python cli.py 'قیمت سهام افزایش یافت'")
+        sys.exit(1)
+    
+    # گرفتن متن از آرگومان‌ها
+    text = " ".join(sys.argv[1:])
+    
+    # بارگذاری مدل
+    print("🔄 در حال بارگذاری مدل...")
+    analyzer = FinancialSentimentAnalyzer()
+    
+    # تحلیل
+    result = analyzer.predict(text)
+    
+    # نمایش نتیجه به صورت زیبا
+    print("\n📊 نتیجه تحلیل:")
+    print("=" * 50)
+    print(f"📝 متن: {result['text']}")
+    print(f"🎯 احساسات: {result['sentiment']}")
+    print(f"📈 اطمینان: {result['confidence']}")
+    print("-" * 50)
+    print("📊 جزئیات:")
+    print(f"   منفی: {result['scores']['negative']}")
+    print(f"   خنثی: {result['scores']['neutral']}")
+    print(f"   مثبت: {result['scores']['positive']}")
+    print("=" * 50)
+
+if __name__ == "__main__":
+    main()
